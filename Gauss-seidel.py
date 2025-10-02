@@ -82,12 +82,18 @@ def normalizar(a,b):
 
 # Por lo general se deja la relajacion en 1
 
-def gauss_seidel(a,b,n,x,es,relajacion,imax):
+def gauss_seidel(a,b,n,x,es,relajacion,imax, x_true=None):
     iteracion = 0
     ea = float("inf")
+    convergidas = [False] * n  # Para rastrear la convergencia de cada variable
+    primer_convergida_info = None
 
-    print(f"\n{'Iter':<6}{'x':<30}{'Error (%)':<12}")
-    print("-"*50)
+    # Encabezado de la tabla
+    header_vars = "".join([f'x{i+1:<11}' for i in range(n)])
+    header_errs = "".join([f'Era{i+1}(%){"":<8}' for i in range(n)])
+    print(f"\n{'Iter':<6}{header_vars}{header_errs}{'Era max(%)':<12}")
+    print("-" * (6 + n*24 + 12))
+
 
     while ea > es and iteracion < imax:
         x_old = x.copy()
@@ -99,12 +105,37 @@ def gauss_seidel(a,b,n,x,es,relajacion,imax):
             # actualización con relajación
             x[i] = relajacion*suma + (1-relajacion)*x_old[i]
 
-        # calcular error como máximo relativo entre componentes
+        # calcular error como máximo relativo entre componentes (Error Aproximado)
         errores = [abs((x[i]-x_old[i])/x[i])*100 if x[i]!=0 else 0 for i in range(n)]
         ea = max(errores)
 
+        # Verificar convergencia individual
+        for i in range(n):
+            if not convergidas[i] and errores[i] < es:
+                convergidas[i] = True
+                if primer_convergida_info is None:
+                    primer_convergida_info = (i, iteracion + 1)
+
         iteracion += 1
-        print(f"{iteracion:<6}{str([round(val,6) for val in x]):<30}{ea:<12.6f}")
+
+        # Imprimir resultados de la iteración
+        fila_vars = "".join([f'{val:<12.6f}' for val in x])
+        fila_errs = "".join([f'{err:<15.6f}' for err in errores])
+        print(f"{iteracion:<6}{fila_vars}{fila_errs}{ea:<12.6f}")
+
+    # Imprimir mensajes de convergencia
+    if primer_convergida_info:
+        var_idx, it = primer_convergida_info
+        print(f"\n🔔 La variable x[{var_idx+1}] fue la primera en converger en la iteración {it}.")
+
+    if all(convergidas):
+        print("✅ Todas las variables convergieron antes del máximo de iteraciones.")
+    elif iteracion >= imax:
+        print(f"\n⚠️ Se alcanzó el máximo de {imax} iteraciones. El método no convergió al criterio de error de {es}%.")
+    else:
+        # Esto puede pasar si el error máximo converge pero no todas las variables individualmente
+        print("\n⚠️ El método finalizó, pero no todas las variables alcanzaron el criterio de error individualmente.")
+
 
     return x
 
@@ -112,8 +143,8 @@ def gauss_seidel(a,b,n,x,es,relajacion,imax):
 # ==========================
 # Ejemplo
 # ==========================
-imax = 20
-es = 0.05
+imax = 100
+es = 1e-6  # tolerancia en %
 relajacion = 1  # 1 = Gauss-Seidel clásico
 
 # Matriz A
@@ -136,8 +167,13 @@ ok_def = verificar_def_pos(a)
 # Condiciones mínimas: determinante ≠ 0 y (diagonal dominante o definida positiva)
 if ok_det and (ok_diag or ok_def):
     print("\n✅ Se puede aplicar Gauss–Seidel\n")
+
+    # Calcular solución "verdadera" para comparar
+    x_true = np.linalg.solve(np.array(a), np.array(b))
+    print(f"Solución 'verdadera' (para cálculo de error): {x_true}\n")
+
     a_norm, b_norm = normalizar(a,b)
-    resultado = gauss_seidel(a_norm, b_norm, n, x0, es, relajacion, imax)
-    print("\nResultado final:", resultado)
+    resultado = gauss_seidel(a_norm, b_norm, n, x0, es, relajacion, imax, x_true)
+    print("\nResultado final:", [round(val, 6) for val in resultado])
 else:
     print("\n❌ No es seguro aplicar Gauss–Seidel con esta matriz")

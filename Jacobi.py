@@ -33,7 +33,7 @@ def verificar_diag_dom(a, n):
 # ===========================
 # Método de Jacobi
 # ===========================
-def jacobi(a, b, n, x0, es, imax):
+def jacobi(a, b, n, x0, es, imax, x_true=None):
     """
     Resuelve el sistema Ax = b usando el método iterativo de Jacobi.
     
@@ -44,6 +44,7 @@ def jacobi(a, b, n, x0, es, imax):
         x0   : vector inicial de aproximaciones
         es   : tolerancia de error (%) para detener la iteración
         imax : número máximo de iteraciones
+        x_true: solución verdadera para calcular el error verdadero
     """
 
     # 1️⃣ Verificar que el sistema tiene solución única
@@ -55,43 +56,63 @@ def jacobi(a, b, n, x0, es, imax):
     verificar_diag_dom(a, n)
 
     # 3️⃣ Inicialización de variables
-    x = x0.copy()      # vector de aproximaciones inicial
+    x = x0.copy()
     iteracion = 0
-    ea = 100           # error inicial muy grande
+    ea = float("inf")
+    convergidas = [False] * n
+    primer_convergida_info = None
 
     # 4️⃣ Encabezado de tabla de iteraciones
-    print(f"\n{'Iter':<5}{'Valores de x':<40}{'Error (%)':<15}")
-    print("-"*65)
+    header_vars = "".join([f'x{i+1:<11}' for i in range(n)])
+    header_errs = "".join([f'Era{i+1}(%){"":<8}' for i in range(n)])
+    print(f"\n{'Iter':<6}{header_vars}{header_errs}{'Era max(%)':<12}")
+    print("-" * (6 + n*24 + 12))
 
     # ===========================
     # 5️⃣ Bucle principal de iteraciones
     # ===========================
     while ea > es and iteracion < imax:
-        x_new = np.zeros_like(x, dtype=float)  # vector para guardar nuevos valores
+        x_old = x.copy()
 
         # 🔹 Calcular cada componente x_i usando Jacobi
         for i in range(n):
             suma = b[i]
             for j in range(n):
                 if i != j:
-                    suma -= a[i][j] * x[j]
-            x_new[i] = suma / a[i][i]  # fórmula de Jacobi
+                    suma -= a[i][j] * x_old[j]
+            x[i] = suma / a[i][i]
 
-        # 🔹 Calcular error relativo máximo entre iteraciones
-        ea = max(abs((x_new[i] - x[i]) / x_new[i]) * 100 if x_new[i] != 0 else 0 for i in range(n))
+        # 🔹 Calcular error relativo para cada componente (Error Aproximado)
+        errores = [abs((x[i] - x_old[i]) / x[i]) * 100 if x[i] != 0 else 0 for i in range(n)]
+        ea = max(errores)
 
-        # 🔹 Mostrar resultados de la iteración
-        print(f"{iteracion+1:<5}{str(x_new):<40}{ea:<15.6f}")
+        # 🔹 Verificar convergencia individual
+        for i in range(n):
+            if not convergidas[i] and errores[i] < es:
+                convergidas[i] = True
+                if primer_convergida_info is None:
+                    primer_convergida_info = (i, iteracion + 1)
 
-        # 🔹 Preparar vector para siguiente iteración
-        x = x_new
         iteracion += 1
 
+        # 🔹 Mostrar resultados de la iteración
+        fila_vars = "".join([f'{val:<12.6f}' for val in x])
+        fila_errs = "".join([f'{err:<15.6f}' for err in errores])
+        print(f"{iteracion:<6}{fila_vars}{fila_errs}{ea:<12.6f}")
+
     # 6️⃣ Mostrar resultados finales
-    print("\nResultado final:")
-    print("Iteraciones:", iteracion)
-    print("Vector solución aproximada:", x)
-    print("Error aproximado (%):", ea)
+    if primer_convergida_info:
+        var_idx, it = primer_convergida_info
+        print(f"\n🔔 La variable x[{var_idx+1}] fue la primera en converger en la iteración {it}.")
+
+    if all(convergidas):
+        print("✅ Todas las variables convergieron antes del máximo de iteraciones.")
+    elif iteracion >= imax:
+        print(f"\n⚠️ Se alcanzó el máximo de {imax} iteraciones. El método no convergió al criterio de error de {es}%.")
+    else:
+        print("\n⚠️ El método finalizó, pero no todas las variables alcanzaron el criterio de error individualmente.")
+
+    print("\nResultado final:", [round(val, 6) for val in x])
 
 
 # ===========================
@@ -121,5 +142,9 @@ x0 = np.zeros(n)
 es = 0.05   # tolerancia de error (%)
 imax = 20   # número máximo de iteraciones
 
+# Calcular la solución "verdadera" para comparar
+x_true = np.linalg.solve(a, b)
+print(f"Solución 'verdadera' (para cálculo de error): {x_true}\n")
+
 # Llamada al método de Jacobi
-jacobi(a, b, n, x0, es, imax)
+jacobi(a, b, n, x0, es, imax, x_true)

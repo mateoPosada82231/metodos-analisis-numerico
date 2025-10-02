@@ -1,10 +1,12 @@
+import math
+
 def f(x):
-    return -0.5*(x**2) + 2.5*x + 4.5
+    return x**3 - 3*x**2*math.exp(-x)+3*x*math.exp(-2*x)-math.exp(-3*x)
 
 # Valores iniciales
-xl = 5
-xu = 10
-es = 0.01   # tolerancia (%) 
+xl = 0      # límite inferior
+xu = 1      # límite superior
+es = 1e-20   # tolerancia (%)
 imax = 15   # número máximo de iteraciones
 
 # Verificar si existe raíz en el intervalo
@@ -39,7 +41,7 @@ else:
             fl = fr
         else:
             ea = 0
-
+    print("el error que se muestra es error aproximado")
     print("\nResultado final:")
     print("Raíz aproximada =", xr)
     print("Iteraciones =", itr)

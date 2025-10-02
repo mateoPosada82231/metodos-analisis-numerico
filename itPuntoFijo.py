@@ -14,37 +14,40 @@ def punto_fijo(g, x0, es=0.001, imax=20):
         (xr, iteraciones, ea) -> raíz aproximada, número de iteraciones y error aproximado
     """
 
-    xr = x0                # valor inicial
-    iterac = 0             # contador de iteraciones
-    ea = float("inf")      # error inicial muy grande (infinito)
+    xr = x0
+    iterac = 0
+    historial = []
+
+    # Proceso iterativo para encontrar la raíz
+    for i in range(imax):
+        xrold = xr
+        xr = g(xrold)
+        ea = abs((xr - xrold) / xr) * 100 if xr != 0 else 0
+        historial.append({'iter': i + 1, 'xr': xr, 'ea': ea})
+        if ea < es:
+            break
+
+    raiz_final = xr
 
     # Encabezado de la tabla de resultados
-    print(f"{'Iter':<5}{'xr':<15}{'ea (%)':<15}")
-    print("-"*35)
+    print(f"{'Iter':<5}{'xr':<15}{'ea (%)':<15}{'et (%)':<15}")
+    print("-" * 50)
 
-    # Proceso iterativo
-    while ea > es and iterac < imax:
-        xrold = xr          # guardamos el valor anterior
-        xr = g(xrold)       # aplicamos la función de iteración
-        iterac += 1
-        if xr != 0:
-            ea = abs((xr - xrold) / xr) * 100   # cálculo del error aproximado
-        else:
-            ea = abs(xr - xrold) * 100
-
-        # Imprimir valores de cada iteración
-        print(f"{iterac:<5}{xr:<15.10f}{ea:<15.10f}")
+    # Calcular error verdadero y mostrar tabla
+    for item in historial:
+        et = abs((raiz_final - item['xr']) / raiz_final) * 100 if raiz_final != 0 else 0
+        print(f"{item['iter']:<5}{item['xr']:<15.10f}{item['ea']:<15.10f}{et:<15.10f}")
 
     # Resultado final o mensaje de no convergencia
-    if ea <= es:
+    if historial[-1]['ea'] <= es:
         print("\nResultado final:")
-        print("Iteraciones:", iterac)
-        print("Raíz aproximada:", xr)
-        print("Error aproximado (%):", ea)
+        print("Iteraciones:", len(historial))
+        print("Raíz aproximada:", raiz_final)
+        print("Error aproximado (%):", historial[-1]['ea'])
     else:
         print("\nEl método no convergió en", imax, "iteraciones")
 
-    return xr, iterac, ea
+    return raiz_final, len(historial), historial[-1]['ea']
 
 # Nota importante:
 # El método de punto fijo requiere transformar la ecuación f(x) = 0 en una forma equivalente x = g(x).
@@ -86,4 +89,3 @@ imax = 20
 
 # 4️⃣ Llamar a la función punto_fijo()
 punto_fijo(g, x0, es, imax)
-

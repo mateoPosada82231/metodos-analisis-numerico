@@ -38,29 +38,45 @@ f_prime = obtener_derivada(definir_funcion)
 
 
 def newton_raphson(f, f_prime, x0, tol=1e-6, max_iter=100):
-    x1 = x0
-    print(f"Iteración 0: x = {x0:.8f}, f(x) = {f(x0):.8e}")
+    x_current = x0
+    historial = []
+    ea = 100  # Error aproximado inicial
 
     for i in range(max_iter):
-        # Verificar que la derivada no sea cero
-        if abs(f_prime(x1)) < 1e-12:
-            print("La derivada es muy pequeña o cero. El método puede no converger.")
-            return None
+        x_old = x_current
 
-        # Aplicar la fórmula de Newton-Raphson
-        x2 = x1 - f(x1) / f_prime(x1)
-        print(f"Iteración {i + 1}: x = {x2:.8f}, f(x) = {f(x2):.8e}")
+        f_prime_val = f_prime(x_old)
+        if abs(f_prime_val) < 1e-12:
+            print("La derivada es muy pequeña o cero. El método no convergerá.")
+            break
 
-        # Verificar el criterio de convergencia
-        if abs(x2 - x1) <= tol:
-            print(f"\n✓ Raíz encontrada: x = {x2:.8f} en {i + 1} iteraciones")
-            print(f"✓ Verificación: f(x) = {f(x2):.2e}")
-            return x2
+        x_current = x_old - f(x_old) / f_prime_val
 
-        x1 = x2
+        ea = abs((x_current - x_old) / x_current) * 100 if x_current != 0 else 0
 
-    print("No se alcanzó la convergencia.")
-    return None
+        historial.append({'iter': i + 1, 'x': x_current, 'fx': f(x_current), 'ea': ea})
+
+        if ea < tol:
+            break
+
+    raiz_final = x_current
+
+    print(f"\n{'Iter':<5}{'x':<20}{'f(x)':<15}{'Err. Aprox.(%)':<20}{'Err. Verd.(%)':<20}")
+    print("-" * 85)
+
+    if raiz_final is not None:
+        for item in historial:
+            et = abs((raiz_final - item['x']) / raiz_final) * 100 if raiz_final != 0 else 0
+            print(f"{item['iter']:<5}{item['x']:<20.10f}{item['fx']:<15.4e}{item['ea']:<20.10f}{et:<20.10f}")
+
+    if ea <= tol:
+        print(f"\n✓ Raíz encontrada: x = {raiz_final:.8f} en {len(historial)} iteraciones")
+        print(f"✓ Error aproximado final: {ea:.10f}%")
+        print(f"✓ Verificación: f(x) = {f(raiz_final):.2e}")
+    else:
+        print(f"\n❌ No se alcanzó la convergencia en {max_iter} iteraciones.")
+
+    return raiz_final
 
 
 # Ejecutar el método
